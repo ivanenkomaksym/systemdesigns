@@ -124,3 +124,48 @@ We will only estimate media storage here.
 - 5-year media storage: 30 TB * 365 * 5 = ~55 PB
 
 ![Alt text](twitter.png?raw=true "Application architecture")
+
+## Designing TikTok
+
+Functional Requirements for TikTok System Design
+- User Profile
+- Uploading and streaming short video clips.
+- Creating and sharing video content.
+- Following user-profiles and exploring curated video feeds.
+- Liking, disliking, and commenting on videos.
+- Discovering new videos based on personalized recommendations.
+
+Assumptions:
+- MAU: 1 billion monthly active users.
+- 50% of users use TikTok daily.
+- 10% of users post videos
+
+Estimations:
+Query per second (QPS) estimate:
+- Daily active users (DAU) = 1 billion * 50% = 500 million
+- Posts QPS = 500 million / 24 hour / 3600 seconds = ~5787 posts/sec
+- Peek QPS = 2 * QPS = ~11574
+
+We will only estimate media storage here.
+ - Average user profile size: 1MB
+ - Total User Profiles Storage: 1 billion * 1 MB = 1 Petabyte (PB)
+ - Average Video Metadata: 500 KB
+ - Daily Video Metadata Storage: 50 million * 500 KB = 25 Terabytes (TB)
+ - Monthly Video Metadata Storage: 25 TB * 30 days = 750 TB
+ - Average Video size: 20MB.
+ - Total Video Streams Storage: 50 million * 20 MB = 1 Petabyte (PB) daily
+ - Monthly Video Streams Storage: 1 PB * 30 days = 30 PB
+
+![Alt text](tiktok.png?raw=true "Application architecture")
+
+Considerations:
+- CDN Solutions for Video could help, like AWS CloudFront, Cloudflare Stream
+- For Recommendation System we need real-time analytics, typically:
+  - Event-driven architecture (Kafka, Kinesis) to process user interactions.
+  - Machine Learning Models (e.g., TensorFlow, PyTorch) to suggest videos based on user behavior.
+  - Graph Databases (Neo4j, Amazon Neptune) for social connections and trends.
+- Relational DBs (PostgreSQL) are utilized for storing structured data, such as user profiles, relationships, and video metadata.
+- NoSQL databases, like Redis and Cassandra, are utilized for handling unstructured or semi-structured data, such as user interactions (likes, comments, shares) and scalable storage of videos.
+- Cloud-based object storage solutions like Amazon S3 or Google Cloud Storage are employed for storing video content in its original form.
+- Fanout Services are responsible for efficiently distributing uploaded videos to users' feeds, ensuring a personalized experience.
+- The Cache services play a crucial role in optimizing content delivery by storing personalized feeds, metadata, and trending content. Utilizing Redis as an in-memory data store, it caches frequently accessed data, reducing latency for users accessing personalized feeds and trending videos.
