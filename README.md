@@ -192,5 +192,72 @@ Considerations:
 - Messaging Queue: In order to optimise the booking process for fast response time and efficient handling of requests, we should adopt an asynchronous approach for sending notifications. This can be achieved by utilising a message-queue system based on Kafka. The notification service will generate messages and publish them to the queue, while consumers of the queue will be responsible for delivering emails, SMS, and push
 notifications to the intended recipients.
 
+## Design Instagram
+
+Functional Requirements for Instagram System Design:
+
+- Post photos and videos: The users can post photos and videos on Instagram.
+- Follow and unfollow users: The users can follow and unfollow other users on Instagram.
+- Like or dislike posts: The users can like or dislike posts of the accounts they follow.
+- Search photos and videos: The users can search photos and videos based on captions and location.
+- Generate news feed: The users can view the news feed consisting of the photos and videos (in chronological order) from all the users they follow.
+
+Estimations:
+Query per second (QPS) estimate:
+- Daily active users (DAU) = 1 billion * 50% = 500 million
+- On average, each user sends 20 requests (of any type) per day to our service
+- QPS = 500 million * 20 / 24 hour / 3600 seconds = ~115 740 q/s
+- Peek QPS = ~234 481 q/s
+- Assume 10% of DAU make 2 posts a day
+- Posts QPS = 500 million * 0.1 * 2 / 24 hour / 3600 seconds = ~1157 posts/sec
+- Peek posts QPS = 2 * QPS = ~2314
+- We can consider 3 MB as the maximum size of each photo and 150 MB as the maximum size of each video uploaded on Instagram
+- Assume 60 million photos and 35 million videos are shared on Instagram per day
+- Storage: 60 million * 3 MB + 35 million * 150 MB = 180 million MB + 5250 MB = 5430 million MG = ~5.43 PB/day
+- Storage per year = 5.43 * 365 = 1981.95 PB
+- AWS S3, Standard storage: ~$0.023 per GB per month, Cost per month: $46,643,825, Annual cost: ~$559.7 million
+- Microsoft Azure Blob Storage, Hot tier: ~$0.018 per GB per month, Cost per month: $36,503,863, Annual cost: ~$438 million
+- Bandwidth: = ~5.43 PB/day / 24 / 3600 ~= 62.84 GB/s ~= 502.8 Gbps
+- Incoming bandwidth ~= 502.8 Gbps
+- Let’s say the ratio of readers to writers is 100:1.
+- Required outgoing bandwidth ~= 100 * 502.8 Gbps ~= 50.28 Tbps
+
+![Alt text](instagram.png?raw=true "Application architecture")
+
+User Service:
+- Handles user registration, login, authentication, and profile management.
+- Stores user data like username, email, bio, profile picture, etc.
+- Integrates with social authentication providers (e.g., Facebook, Google).
+
+Post Service:
+- Handles photo and video uploads, editing, and deletion.
+- Stores post metadata like caption, hashtags, location, timestamp, etc.Processes uploaded media for resizing, filtering, and thumbnail generation.
+- Manages photo and video transcoding for different devices and resolutions.
+
+Feed Service:
+- Generates personalized news feeds for each user based on their follows, likes, activity, and engagement.
+- Leverages a distributed system like Apache Kafka or RabbitMQ for real-time updates and notifications.
+- Utilizes a cache layer like Redis for fast feed retrieval and reduced database load.
+
+Storage Service:
+- Stores uploaded photos and videos efficiently and reliably.
+- Utilizes a scalable object storage solution like Amazon S3, Google Cloud Storage, or Azure Blob Storage.
+- Implements redundancy and disaster recovery mechanisms for data protection.
+
+Search Service:
+- Enables searching for users, hashtags, and locations.
+- Indexes users, posts, and hashtags based on relevant parameters.
+- Employs efficient indexing and search algorithms for fast and accurate results.
+
+Notification Service:
+- Informs users about relevant events like likes, comments, mentions, and follows.
+- Pushes notifications to mobile devices through platforms like Firebase Cloud Messaging or Amazon SNS.
+- Leverages a queueing system for asynchronous notification delivery.
+
+Analytics Service:
+- Tracks user engagement, post performance, and overall platform usage.
+- Gathers data on views, likes, comments, shares, and clicks.
+- Provides insights to improve user experience, optimize content recommendations, and target advertising.
+
 ## References
 [Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
