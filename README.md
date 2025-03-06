@@ -169,3 +169,28 @@ Considerations:
 - Cloud-based object storage solutions like Amazon S3 or Google Cloud Storage are employed for storing video content in its original form.
 - Fanout Services are responsible for efficiently distributing uploaded videos to users' feeds, ensuring a personalized experience.
 - The Cache services play a crucial role in optimizing content delivery by storing personalized feeds, metadata, and trending content. Utilizing Redis as an in-memory data store, it caches frequently accessed data, reducing latency for users accessing personalized feeds and trending videos.
+
+## Design online movie ticketing system BookMyShow
+
+Functional Requirements
+- City Selection: The portal should provide a list of cities where theatres are available, allowing users to select their preferred location.
+- Movie Listings: Based on the selected city, the portal should display all movies currently running in that city.
+- Cinema and Show Selection: For a selected movie, the portal should list cinemas running the movie, along with available showtimes.
+- Ticket Booking: Users should be able to select a show at a specific theatre and proceed to book tickets seamlessly.
+- Ticket Notifications: After booking, the system should send a copy of the tickets to the user via SMS or email for confirmation and record.
+- Seating Arrangement Display: The portal should visually display the seating arrangement of the selected cinema hall.
+- Seat Selection: Users should have the ability to choose multiple seats from the seating arrangement as per their preference.
+- Ticket Serving Order: The system should ensure tickets are allocated on a First In, First Out (FIFO) basis to handle multiple concurrent bookings fairly and accurately.
+
+![Alt text](bookmyshow.png?raw=true "Application architecture")
+
+Considerations:
+- What will happen if multiple users will try to book the same ticket using different platforms? How to solve this problem? 
+  - The theatre’s server needs to follow a timeout locking mechanism strategy where a seat will be locked temporarily for a user for a specific time session (for example, 5-10 minutes). If the user is not able to book the seat within that timeframe then release the seat for another user. This should be done on a first come first serve basis.
+- Redis Cluster: We have a set of Redis clusters each having their own set of nodes(or replicas), configured on the basis of use cases. It is primarily being used for app server caching, storing movie metadata(description, genre, languages, actors’ info, release date, film board certification number, user reviews and comments, etc) and for the seat-blocking mechanism, during tentative booking(prior to payment)
+- Since the booking process is quintessentially a transactional one, we need to enforce strict ACID compliance. Also we need to store many other relational information about operators, theatres, halls, seats, etc for our local TMS. To achieve both the goals, we have used MySQL in this exercise(but PostgreSQL, Oracle, etc can also be used). We can configure partitions based on regions, if the user base grows. Replication can be similar to redis.
+- Messaging Queue: In order to optimise the booking process for fast response time and efficient handling of requests, we should adopt an asynchronous approach for sending notifications. This can be achieved by utilising a message-queue system based on Kafka. The notification service will generate messages and publish them to the queue, while consumers of the queue will be responsible for delivering emails, SMS, and push
+notifications to the intended recipients.
+
+## References
+[Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
