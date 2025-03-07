@@ -259,5 +259,54 @@ Analytics Service:
 - Gathers data on views, likes, comments, shares, and clicks.
 - Provides insights to improve user experience, optimize content recommendations, and target advertising.
 
+## Design Youtube
+
+Functional requirements:
+- Ability to upload videos fast
+- Smooth video streaming
+- Ability to change video quality
+- Low infrastructure cost
+- High availability, scalability, and reliability requirements
+- Clients supported: mobile apps, web browser, and smart TV
+
+Assumptions:
+- Assume the product has 5 million daily active users (DAU).
+- Users watch 5 videos per day.
+- 10% of users upload 1 video per day.
+- Assume the average video size is 300 MB.
+- Total daily storage space needed: 5 million * 10% * 300 MB = 150TB
+- CDN cost.
+  - When cloud CDN serves a video, you are charged for data transferred out of the
+CDN.
+  - Let us use Amazon’s CDN CloudFront for cost estimation (Figure 14-2) [3]. Assume
+100% of traffic is served from the United States. The average cost per GB is $0.02.
+For simplicity, we only calculate the cost of video streaming.
+  - 5 million * 5 videos * 0.3GB * $0.02 = $150,000 per day.
+
+![Alt text](youtube.png?raw=true "Application architecture")
+
+- User: A user watches YouTube on devices such as a computer, mobile phone, or smart
+TV.
+- Load balancer: A load balancer evenly distributes requests among API servers.
+- API servers: All user requests go through API servers except video streaming.
+- Metadata DB: Video metadata are stored in Metadata DB. It is sharded and replicated to
+meet performance and high availability requirements.
+- Metadata cache: For better performance, video metadata and user objects are cached.
+- Original storage: A blob storage system is used to store original videos. A quotation in
+Wikipedia regarding blob storage shows that: “A Binary Large Object (BLOB) is a
+collection of binary data stored as a single entity in a database management system” [6].
+- Transcoding servers: Video transcoding is also called video encoding. It is the process of
+converting a video format to other formats (MPEG, HLS, etc), which provide the best
+video streams possible for different devices and bandwidth capabilities.
+• Transcoded storage: It is a blob storage that stores transcoded video files.
+• CDN: Videos are cached in CDN. When you click the play button, a video is streamed
+from the CDN.
+• Completion queue: It is a message queue that stores information about video transcoding
+completion events.
+• Completion handler: This consists of a list of workers that pull event data from the
+completion queue and update metadata cache and database.
+
 ## References
 [Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
+
+[Alex Xu, System Design Interview – An insider's guide, 2020]
