@@ -306,7 +306,26 @@ completion events.
 • Completion handler: This consists of a list of workers that pull event data from the
 completion queue and update metadata cache and database.
 
+## Design Uber
+
+Functional requirements
+- Users should be able to see all the cabs available with minimum price and ETA
+- Users should be able to book a cab for their destination
+- Users should be able to see the location of the driver
+- Users should be able to cancel their ride whenever they want
+
+Assumptions:
+- 5 million DAU, 200 000 drivers, 1 million rides daily
+- On average each user sends 5 requests
+- QPS: 5 million * 5 / 24 / 3600 = 290 req/sec
+- Peek QPS: 580 req/sec
+- One message is about 500 bytes
+- 25 million req * 500 bytes = 12.5 GB per day
+- If we store it for 180 days = 12.5 GB * 180 = 2.25 TB storage
+
 ## References
 [Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
+
+[System Design of Uber App | Uber System Architecture](https://www.geeksforgeeks.org/system-design-of-uber-app-uber-system-architecture/)
 
 [Alex Xu, System Design Interview – An insider's guide, 2020]
