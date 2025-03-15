@@ -323,6 +323,27 @@ Assumptions:
 - 25 million req * 500 bytes = 12.5 GB per day
 - If we store it for 180 days = 12.5 GB * 180 = 2.25 TB storage
 
+![Alt text](uber.png?raw=true "Application architecture")
+
+One of the main tasks of Uber service is to match the rider with cabs which means we need two different services in our architecture i.e.  
+
+    Supply Service (for cabs)
+    Demand Service (for riders)
+
+Uber has a Dispatch system (Dispatch optimization/DISCO) in its architecture to match supply with demand. This dispatch system uses mobile phones and it takes the responsibility to match the drivers with riders (supply to demand). 
+
+DISCO must have these goals…  
+
+    Reduce extra driving.
+    Minimum waiting time
+    Minimum overall ETA
+
+The dispatch system completely works on maps and location data/GPS, so the first thing which is important is to model our maps and location data. 
+- Earth has a spherical shape so it’s difficult to do summarization and approximation by using latitude and longitude. To solve this problem Uber uses the Google S2 library. This library divides the map data into tiny cells (for example 3km) and gives a unique ID to each cell. This is an easy way to spread data in the distributed system and store it easily.
+- S2 library gives coverage for any given shape easily. Suppose you want to figure out all the supplies available within a 3km radius of a city.
+- Using the S2 libraries you can draw a circle of 3km radius and it will filter out all the cells with IDs that lie in that particular circle.
+- This way you can easily match the rider to the driver and you can easily find out the number of cars(supply) available in a particular region. 
+
 ## References
 [Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
 
