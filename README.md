@@ -344,6 +344,30 @@ The dispatch system completely works on maps and location data/GPS, so the first
 - Using the S2 libraries you can draw a circle of 3km radius and it will filter out all the cells with IDs that lie in that particular circle.
 - This way you can easily match the rider to the driver and you can easily find out the number of cars(supply) available in a particular region. 
 
+## Design Dropbox
+
+Functional Requirements:
+
+- The user should be able to upload photos/files.
+- The user should be able to create/delete directories on the drive.
+- The user should be able to download files
+- The user should be able to share the uploaded files.
+- The drive should synchronize the data between user all devices.
+
+Assumptions:
+- Number of users - 500 million
+- 20% DAU - 100 million
+- On average 1 request per day
+- QPS = 100 million / 24 / 3600 = 1157 req/sec
+- 90% reads = 1041 req/sec
+- 10% writes = 115 req/sec
+- Peek QPS = 1157 * 2 = 2314 req/sec
+- The average number of files stored by each user = 200
+- The average size of each file = 100 KB
+- Storage = 500 million * 200 * 100 KB = 9.3 PB
+
+![Alt text](dropbox.png?raw=true "Application architecture")
+
 ## References
 [Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
 
