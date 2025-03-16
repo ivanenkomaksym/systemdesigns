@@ -1,8 +1,20 @@
-# System designs
+# System Designs
 
-## Table of contents
+This repository provides the most commonly asked system design interview questions.
 
-## Design a Scalable REST API
+- [System Designs](#system-designs)
+- [Design e-commerce](#design-e-commerce)
+- [Design Twitter](#design-twitter)
+- [Design TikTok](#design-tiktok)
+- [Design online movie ticketing system BookMyShow](#design-online-movie-ticketing-system-bookmyshow)
+- [Design Instagram](#design-instagram)
+- [Design Youtube](#design-youtube)
+- [Design Uber](#design-uber)
+- [Design Dropbox](#design-dropbox)
+- [References](#references)
+
+
+# Design e-commerce
 
 Design and implement a RESTful API for a product catalog in an e-commerce system. The API should support CRUD operations for products and allow filtering by category and price range:
 - Proper API design with REST principles.
@@ -13,94 +25,7 @@ Design and implement a RESTful API for a product catalog in an e-commerce system
 
 ![Alt text](ecommerce.png?raw=true "Application architecture")
 
-### Pagination, filtering, and sorting
-
-1. OData
-```
-GET /api/Products?$top=10&$skip=20&$filter=Category eq 'Electronics'&$orderby=Price desc
-```
-
-2. GraphQL
-```
-query {
-  products(
-    first: 10
-    after: "cursor123"
-    filter: { category: "Electronics" }
-    sort: { field: "price", order: DESC }
-  ) {
-    edges {
-      node {
-        id
-        name
-        category
-        price
-      }
-      cursor
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
-```
-
-| **Feature**	| **OData** |	**GraphQL** |
-|-------------------|-------------------------|-------------------------------|
-| **Pagination Type**	| 	Offset-based ($top, $skip)	|	Cursor-based (first, after)|
-| **Filtering**	|	$filter=...	|	filter: { ... }|
-| **Sorting**	|	$orderby=...	|	sort: { field: ..., order: ... }|
-| **Flexibility**	|	Predefined schema**	|	Customizable queries|
-| **Over-fetching**	|	May return extra data**	|	Fetch only required fields|
-
-**SQL vs NoSQL: Justification Based on Use Case, Read-Heavy Workloads, and Scalability**  
-
-When choosing between **SQL (Relational Databases)** and **NoSQL (Non-Relational Databases)**, consider the **use case**, **read-heavy nature**, and **scalability** of your application.
-
----
-
-## **🔹 1. Use Case Justification**  
-
-| **Factor**        | **SQL (Relational DBs)** | **NoSQL (Non-Relational DBs)** |
-|-------------------|-------------------------|-------------------------------|
-| **Data Structure** | Well-structured, predefined schema (tables, rows, relationships). | Flexible, schema-less (documents, key-value, graphs, column-family). |
-| **Use Case** | Ideal for transactional systems (e.g., Banking, ERP, CRM). | Suitable for dynamic or semi-structured data (e.g., IoT, social media, real-time analytics). |
-| **ACID Compliance** | Strong consistency (Atomicity, Consistency, Isolation, Durability). | Eventual consistency (CAP Theorem: choose between Consistency, Availability, and Partition tolerance). |
-| **Joins & Relationships** | Efficient support for complex joins & normalized data. | Not designed for joins; optimized for fast access patterns. |
-
-### **💡 Example Use Cases**  
-✅ **SQL** → Banking, E-commerce transactions, Inventory Management.  
-✅ **NoSQL** → Social Media Feeds, IoT Data Storage, Caching Systems.  
-
----
-
-## **🔹 2. Read-Heavy Nature**  
-
-### **✅ When to Choose SQL for Read-Heavy Workloads**  
-- 🔹 If **read queries are complex** (e.g., analytics, aggregations, reporting).  
-- 🔹 When **data consistency is critical** (e.g., financial transactions, inventory management).  
-- 🔹 **Indexing & Query Optimization** in SQL databases (e.g., PostgreSQL, MySQL) improve read performance.  
-
-**Example SQL Query:**  
-```sql
-SELECT CustomerID, SUM(OrderTotal)
-FROM Orders
-WHERE OrderDate >= '2024-01-01'
-GROUP BY CustomerID
-ORDER BY SUM(OrderTotal) DESC
-LIMIT 10;
-```
-
-| **Use Case**        |	SQL |	NoSQL |
-|-------------------|-------------------------|-------------------------------|
-| Transactional Systems	|✅ Best (ACID compliance)	|❌ Not ideal|
-| Analytics & Reporting	|✅ Optimized	|❌ Not ideal|
-| Social Media Feeds	|❌ Slow for massive reads	|✅ Fast (Denormalized)|
-| IoT & Real-time Data	|❌ Struggles at scale	|✅ Optimized for time-series data|
-| E-commerce & Inventory	|✅ Strong consistency	|⚠️ Can work but requires additional constraints|
-
-## Designing Twitter
+# Design Twitter
 
 Assumptions:
 - 300 million monthly active users.
@@ -125,7 +50,7 @@ We will only estimate media storage here.
 
 ![Alt text](twitter.png?raw=true "Application architecture")
 
-## Designing TikTok
+# Design TikTok
 
 Functional Requirements for TikTok System Design
 - User Profile
@@ -170,7 +95,7 @@ Considerations:
 - Fanout Services are responsible for efficiently distributing uploaded videos to users' feeds, ensuring a personalized experience.
 - The Cache services play a crucial role in optimizing content delivery by storing personalized feeds, metadata, and trending content. Utilizing Redis as an in-memory data store, it caches frequently accessed data, reducing latency for users accessing personalized feeds and trending videos.
 
-## Design online movie ticketing system BookMyShow
+# Design online movie ticketing system BookMyShow
 
 Functional Requirements
 - City Selection: The portal should provide a list of cities where theatres are available, allowing users to select their preferred location.
@@ -192,7 +117,7 @@ Considerations:
 - Messaging Queue: In order to optimise the booking process for fast response time and efficient handling of requests, we should adopt an asynchronous approach for sending notifications. This can be achieved by utilising a message-queue system based on Kafka. The notification service will generate messages and publish them to the queue, while consumers of the queue will be responsible for delivering emails, SMS, and push
 notifications to the intended recipients.
 
-## Design Instagram
+# Design Instagram
 
 Functional Requirements for Instagram System Design:
 
@@ -259,7 +184,7 @@ Analytics Service:
 - Gathers data on views, likes, comments, shares, and clicks.
 - Provides insights to improve user experience, optimize content recommendations, and target advertising.
 
-## Design Youtube
+# Design Youtube
 
 Functional requirements:
 - Ability to upload videos fast
@@ -306,7 +231,7 @@ completion events.
 • Completion handler: This consists of a list of workers that pull event data from the
 completion queue and update metadata cache and database.
 
-## Design Uber
+# Design Uber
 
 Functional requirements
 - Users should be able to see all the cabs available with minimum price and ETA
@@ -344,7 +269,7 @@ The dispatch system completely works on maps and location data/GPS, so the first
 - Using the S2 libraries you can draw a circle of 3km radius and it will filter out all the cells with IDs that lie in that particular circle.
 - This way you can easily match the rider to the driver and you can easily find out the number of cars(supply) available in a particular region. 
 
-## Design Dropbox
+# Design Dropbox
 
 Functional Requirements:
 
@@ -368,7 +293,7 @@ Assumptions:
 
 ![Alt text](dropbox.png?raw=true "Application architecture")
 
-## References
+# References
 [Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
 
 [System Design of Uber App | Uber System Architecture](https://www.geeksforgeeks.org/system-design-of-uber-app-uber-system-architecture/)
