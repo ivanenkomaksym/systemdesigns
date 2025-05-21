@@ -11,6 +11,7 @@ This repository provides the most commonly asked system design interview questio
 - [Design Youtube](#design-youtube)
 - [Design Uber](#design-uber)
 - [Design Dropbox](#design-dropbox)
+- [Design Gambling platform](#design-gambling-platform)
 - [References](#references)
 
 
@@ -292,6 +293,132 @@ Assumptions:
 - Storage = 500 million * 200 * 100 KB = 9.3 PB
 
 ![Alt text](dropbox.png?raw=true "Application architecture")
+
+# Design Gambling platform
+
+Core Principles:
+
+- Strong Consistency for Core Financials: All operations directly involving user funds (deposits, withdrawals, bet staking, win payouts) will be strongly consistent, typically relying on ACID properties of SQL databases.
+- Eventual Consistency for Scalability & User Experience: Read-heavy data, user activity feeds, analytics, notifications, and non-critical user profile aspects will leverage eventual consistency for better performance, scalability, and resilience.
+- Microservices for Domain Separation: Different parts of the business logic are handled by dedicated services.
+- Asynchronous Communication via Message Queues: Decouples services and enables event-driven workflows.
+
+![Alt text](gambling.png?raw=true "Application architecture")
+
+    Clients (Web & Mobile Apps):
+        Interact with the backend via the API Gateway.
+        Render data, some of which might be eventually consistent (e.g., activity feeds, some game stats displayed alongside core balance).
+
+    CDN (Content Delivery Network):
+        Serves static assets (JS, CSS, images, game assets) to clients, reducing load on application servers and improving latency.
+
+    Load Balancers (LBs):
+        Distribute incoming traffic across multiple instances of the API Gateway and potentially directly to some backend services (though API Gateway is the primary entry).
+
+    API Gateway:
+        Single entry point for all client requests.
+        Handles authentication, rate limiting, request routing to appropriate microservices.
+        Aggregates responses from multiple services if needed.
+
+    Microservices:
+
+        User Service:
+            Responsibilities: User registration, login, profile management, KYC status.
+            Databases:
+                SQL DB (Strong Consistency): Core user identity, credentials, KYC status.
+                NoSQL DB (Eventual Consistency): User activity logs, preferences, detailed profile info that doesn't require immediate consistency across all views.
+            Cache: User sessions, frequently accessed profile data.
+            Publishes UserUpdatedEvent for changes.
+
+        Wallet Service (Ledger):
+            Responsibilities: Manages all user financial balances, deposits, withdrawals, internal transfers (e.g., for bet stakes/payouts). This is the financial source of truth.
+            Database: SQL DB (Strong Consistency - ACID Transactions are paramount).
+            Operations: All operations are synchronous and atomic.
+            Publishes BalanceUpdatedEvent after any financial transaction.
+
+        Betting Service:
+            Responsibilities: Provides odds, manages bet placement logic, validates bets, resolves bets based on game outcomes.
+            Interactions:
+                Strong Consistency Path (Bet Placement):
+                    Receives bet request.
+                    Validates bet against rules/odds.
+                    Makes a synchronous call to Wallet Service to debit the stake.
+                    If debit successful, records the bet (e.g., in its own SQL table or a shared transactional context if designed that way for this critical flow).
+                    Confirms bet to user.
+                Strong Consistency Path (Bet Settlement):
+                    Receives GameResultEvent (from Game Service via Message Queue).
+                    Identifies winning bets.
+                    For each winner, makes a synchronous call to Wallet Service to credit winnings.
+            Cache: Frequently accessed odds can be cached here or in a dedicated odds cache.
+            Publishes BetPlacedEvent, BetSettledEvent, OddsChangedEvent.
+
+        Game Service:
+            Responsibilities: Manages game logic, current game states, generates game outcomes/results.
+            Databases:
+                NoSQL DB (Eventual/Session Consistency): Storing live game states, ongoing player interactions within a game.
+            Cache: Caching live game data, popular game details.
+            Publishes GameResultEvent, GameStateUpdatedEvent.
+
+        Notification Service:
+            Responsibilities: Sends emails, push notifications, SMS alerts.
+            Consistency: Eventual Consistency. Consumes events like BetSettledEvent, UserRegisteredEvent, PromotionAvailableEvent from the Message Queue and sends notifications. A slight delay is acceptable.
+
+        Read Model Update Service (or Projectors):
+            Responsibilities: Consumes events from the Message Queue (BetPlacedEvent, BetSettledEvent, BalanceUpdatedEvent, UserUpdatedEvent, etc.).
+            Builds and maintains denormalized, read-optimized views of data (e.g., user's bet history, detailed transaction list, leaderboards, personalized game recommendations).
+            Databases:
+                NoSQL DB (Eventual Consistency): Stores these read models. Optimized for fast queries.
+                Cache: Frequently accessed query results from these read models are cached.
+            Clients query these read models via the API Gateway for fast, non-critical data displays.
+
+        Reporting/Analytics Service:
+            Responsibilities: Consumes events from the Message Queue for business intelligence, risk management, player behavior analysis.
+            Database: NoSQL DB / Data Warehouse / Data Lake (Eventual Consistency).
+            Data is processed in batches or streams for analytical purposes.
+
+    Databases:
+        SQL Database (e.g., PostgreSQL, MySQL):
+            Used by Wallet Service (absolute source of truth for funds).
+            Used by User Service for core identity data.
+            Ensures ACID properties for financial transactions and critical user data.
+        NoSQL Database (e.g., MongoDB, Cassandra, DynamoDB):
+            Used by Read Model Update Service for storing denormalized views.
+            Used by Reporting/Analytics Service.
+            Used by User Service for activity logs, less critical profile attributes.
+            Used by Game Service for game states.
+            Chosen for scalability, flexibility, and performance for read-heavy or unstructured data.
+
+    Caching Layer (e.g., Redis, Memcached):
+        Reduces database load and improves response times.
+        Caches: User sessions, frequently accessed odds, game lists, results from read models, hot game states.
+        Consistency: Cache invalidation strategies are crucial. For financial data like balance, the cache might have a very short TTL or be updated reactively via events from the Wallet Service. Users might also have a "refresh balance" option that bypasses the cache for a direct hit.
+
+    Message Queue (e.g., Kafka, RabbitMQ, Pulsar):
+        Decouples services, enabling asynchronous communication.
+        Services publish events (e.g., BetPlaced, BalanceUpdated).
+        Other services subscribe to these events to perform actions (update read models, send notifications, feed analytics).
+        Provides resilience (if a consuming service is down, messages can queue up) and scalability.
+
+    External Services:
+        Payment Gateway: For processing actual deposits and withdrawals (interacts tightly with Wallet Service).
+        KYC/Identity Verification Service: Used by User Service.
+        Geo-Location Service: To comply with regional gambling regulations.
+
+Flow Example: Placing a Bet & Viewing Balance
+
+    User views odds: Request hits API Gateway -> Read Model Service (potentially via Betting Service facade) -> Serves cached/eventually consistent odds data.
+    User places a bet:
+        Client -> API Gateway -> Betting Service.
+        Betting Service -> (SYNCHRONOUS & STRONG) Wallet Service to debit stake (SQL transaction).
+        Betting Service records bet. Confirms to user.
+        Betting Service publishes BetPlacedEvent to Message Queue.
+    Downstream (Eventual Consistency):
+        Read Model Service consumes BetPlacedEvent, updates user's bet history view (NoSQL).
+        Reporting Service consumes BetPlacedEvent for analytics.
+    User checks balance:
+        Option A (Slightly Delayed): Client -> API Gateway -> Read Model Service (which has consumed BalanceUpdatedEvent previously). Fast, eventually consistent.
+        Option B (Live): Client -> API Gateway -> Wallet Service -> SQL DB direct lookup. Slower, but strongly consistent. Often combined with a refresh button.
+        Option C (Cached Live): Client -> API Gateway -> Wallet Service -> Cache (short TTL, invalidated/updated by BalanceUpdatedEvent). Good compromise.
 
 # References
 [Online Movie Ticket Booking Platform - System Design (e.g. BookMyShow)](https://medium.com/@prithwish.samanta/online-movie-ticket-booking-platform-system-design-e-g-bookmyshow-69048440901c)
