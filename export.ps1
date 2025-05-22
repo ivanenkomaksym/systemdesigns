@@ -33,7 +33,7 @@ foreach ($file in $DrawIoFiles) {
         
         $file_out = "$($file.DirectoryName)/$($drawio_xml.mxfile.diagram[$i].name).png"
 
-        & "C:/Program Files/draw.io/draw.io.exe" '--export' '--border' '10' '--page-index' $i '--output' $file_out $file.FullName
+        & "C:/Program Files/draw.io/draw.io.exe" '--export' '--border' '10' '--page-index' ($i+1) '--output' $file_out $file.FullName
     }
 
     # wait for last file PNG image file
